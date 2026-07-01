@@ -57,7 +57,7 @@
     "concurrently": "10.0.3",
     "cross-env": "10.1.0",
     "electron": "42.4.0",
-    "eslint": "10.5.0",
+    "eslint": "10.6.0",
     "globals": "17.7.0",
     "postcss": "8.5.15",
     "prettier": "3.8.4",

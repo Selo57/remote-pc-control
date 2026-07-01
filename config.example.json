@@ -1,0 +1,31 @@
+{
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8787,
+    "publicBaseUrl": ""
+  },
+  "security": {
+    "requireLocalApproval": true,
+    "sessionHours": 8
+  },
+  "stream": {
+    "monitorIndex": 0,
+    "fps": 60,
+    "width": 1280,
+    "height": 720,
+    "captureBackend": "gdigrab",
+    "preset": "balanced",
+    "forceEncoder": "",
+    "rtpPort": 5004,
+    "stunUrls": ["stun:stun.l.google.com:19302"],
+    "turn": []
+  },
+  "cloudflare": {
+    "enabled": true,
+    "mode": "quick",
+    "cloudflaredPath": "cloudflared",
+    "namedTunnelName": "",
+    "namedTunnelConfig": "",
+    "fixedDomain": ""
+  }
+}

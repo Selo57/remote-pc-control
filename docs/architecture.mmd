@@ -1,0 +1,13 @@
+flowchart LR
+  Remote["Remote browser"] -->|"HTTPS"| Cloudflare["Cloudflare Tunnel"]
+  Cloudflare -->|"Public port 8787"| Public["Public service"]
+  Public --> Auth["PIN / session / CSRF / approval"]
+  Public --> WebRTC["WebRTC video and control"]
+
+  Local["Local panel / tray"] -->|"Admin port 8788 + token"| Admin["Admin service"]
+  Admin --> Safety["Sessions / devices / input safety"]
+
+  Capture["FFmpeg capture"] -->|"H.264 RTP"| WebRTC
+  WebRTC --> Input["Validated input service"]
+  Input --> Native[".NET SendInput helper"]
+  Native --> Desktop["Windows desktop"]

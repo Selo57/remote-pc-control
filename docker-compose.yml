@@ -1,0 +1,16 @@
+services:
+  coturn:
+    image: coturn/coturn:4.14.0-r0
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - --fingerprint
+      - --lt-cred-mech
+      - --realm=${TURN_REALM:-remote-pc}
+      - --user=${TURN_USERNAME:-remote}:${TURN_PASSWORD:?Set TURN_PASSWORD to a strong random value before starting Coturn}
+      - --min-port=${TURN_MIN_PORT:-49160}
+      - --max-port=${TURN_MAX_PORT:-49200}
+      - --no-cli
+      - --no-tls
+      - --no-dtls
+      - --log-file=stdout

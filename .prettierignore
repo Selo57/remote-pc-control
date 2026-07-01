@@ -1,0 +1,10 @@
+data/
+dist/
+logs/
+native/
+node_modules/
+release/
+package-lock.json
+*.cmd
+*.ps1
+*.mmd

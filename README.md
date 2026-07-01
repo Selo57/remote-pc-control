@@ -1,8 +1,8 @@
 # Remote PC Control
 
-A small self-hosted Windows remote-control app for using your PC from a phone or
+A small self-hosted Windows remote control app for using your PC from a phone or
 browser. Run `Configure-RemotePC.cmd` first, then `Start-RemotePC.cmd` and you
-should be good to go—if something breaks, open an issue and I will work through
+should be good to go. If something breaks, open an issue and I will work through
 it when I can.
 
 > This software can expose control of a real PC. Use a unique PIN, keep `.env`
@@ -77,7 +77,7 @@ Runtime directories such as `data/`, `logs/`, `dist/`, `release/`, and
 
 1. Download or clone the source.
 2. Double-click `Configure-RemotePC.cmd`.
-3. Choose an 8–12 digit control PIN and whether new devices require local approval.
+3. Choose an 8 to 12 digit control PIN and whether new devices require local approval.
 4. Configure Cloudflare, streaming, and optional Discord notifications.
 5. Double-click `Start-RemotePC.cmd`.
 6. Open the printed remote link and enter the PIN.
@@ -105,7 +105,7 @@ REMOTE_PC_PIN=1234567890
 REMOTE_PC_REQUIRE_LOCAL_APPROVAL=true
 ```
 
-The PIN must contain 8–12 digits. The setup scripts generate a random 10-digit
+The PIN must contain 8 to 12 digits. The setup scripts generate a random 10-digit
 PIN when the existing value is missing or too short.
 
 Build and start:

@@ -4,7 +4,7 @@
 
 - Separated public traffic from token-authenticated local administration.
 - Added persistent per-client and global PIN throttling.
-- Added 8–12 digit PIN enforcement and local device approval.
+- Added 8 to 12 digit PIN enforcement and local device approval.
 - Added WebSocket origin checks, message-size limits, and runtime schemas.
 - Added security-boundary tests, ESLint, formatting checks, and Windows CI.
 - Pinned dependencies and removed development tools from production dependencies.

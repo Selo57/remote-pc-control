@@ -65,7 +65,7 @@ Werift when a maintained path removes the affected package.
 
 ## Deployment Requirements
 
-- Use an 8–12 digit random PIN.
+- Use an 8 to 12 digit random PIN.
 - Keep local device approval enabled.
 - Prefer a named Cloudflare Tunnel protected by Cloudflare Access.
 - Never route the administration port through a tunnel or reverse proxy.

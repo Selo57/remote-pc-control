@@ -121,17 +121,134 @@ function Ensure-Env {
   }
 }
 
-function Ensure-Command($Name, $InstallHint) {
-  if (!(Get-Command $Name -ErrorAction SilentlyContinue)) {
-    throw "$Name was not found. $InstallHint"
+function Refresh-ProcessPath {
+  $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+  $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+  $env:Path = "$machinePath;$userPath"
+}
+
+function Test-Executable($CommandOrPath) {
+  if (!$CommandOrPath) {
+    return $false
+  }
+
+  if ([IO.Path]::IsPathRooted($CommandOrPath)) {
+    return Test-Path -LiteralPath $CommandOrPath -PathType Leaf
+  }
+
+  if ($CommandOrPath.Contains("\") -or $CommandOrPath.Contains("/")) {
+    return Test-Path -LiteralPath (Join-Path $Root $CommandOrPath) -PathType Leaf
+  }
+
+  return [bool](Get-Command $CommandOrPath -ErrorAction SilentlyContinue)
+}
+
+function Test-Node24 {
+  if (!(Get-Command "node" -ErrorAction SilentlyContinue)) {
+    return $false
+  }
+
+  try {
+    $rawVersion = (& node --version).Trim().TrimStart("v")
+    $version = [version]($rawVersion -split "-", 2)[0]
+    return $version.Major -ge 24
+  } catch {
+    return $false
   }
 }
 
-function Ensure-Built {
-  Ensure-Command "node" "Install Node.js 24+."
-  Ensure-Command "npm" "Install Node.js 24+."
-  Ensure-Command "ffmpeg" "Install FFmpeg and make sure ffmpeg.exe is on PATH."
+function Test-DotNet8Sdk {
+  if (!(Get-Command "dotnet" -ErrorAction SilentlyContinue)) {
+    return $false
+  }
 
+  try {
+    foreach ($line in & dotnet --list-sdks) {
+      $versionText = ($line -split "\s+", 2)[0]
+      $version = [version]($versionText -split "-", 2)[0]
+      if ($version.Major -ge 8) {
+        return $true
+      }
+    }
+  } catch {
+    return $false
+  }
+
+  return $false
+}
+
+function Install-WinGetPackage($DisplayName, $PackageId) {
+  $winget = Get-Command "winget" -ErrorAction SilentlyContinue
+  if (!$winget) {
+    throw "$DisplayName is missing, and WinGet is unavailable. Install or update App Installer from Microsoft Store, then run Start-RemotePC.cmd again."
+  }
+
+  Write-Step "Installing missing requirement: $DisplayName"
+  & $winget.Source install `
+    --id $PackageId `
+    --exact `
+    --source winget `
+    --accept-package-agreements `
+    --accept-source-agreements `
+    --silent `
+    --disable-interactivity
+  if ($LASTEXITCODE -ne 0) {
+    throw "WinGet could not install $DisplayName. Exit code: $LASTEXITCODE. Install package '$PackageId' manually, then run Start-RemotePC.cmd again."
+  }
+
+  Refresh-ProcessPath
+}
+
+function Ensure-SystemRequirements {
+  Write-Step "Checking system requirements"
+
+  if (!(Test-Node24)) {
+    Install-WinGetPackage "Node.js 24 or newer" "OpenJS.NodeJS.LTS"
+  }
+  if (!(Get-Command "npm" -ErrorAction SilentlyContinue)) {
+    Refresh-ProcessPath
+  }
+  if (!(Test-Node24) -or !(Get-Command "npm" -ErrorAction SilentlyContinue)) {
+    throw "Node.js 24+ or npm is still unavailable after setup. Close this window, run Start-RemotePC.cmd again, or install Node.js LTS manually."
+  }
+
+  if (!(Test-DotNet8Sdk)) {
+    Install-WinGetPackage ".NET SDK 8 or newer" "Microsoft.DotNet.SDK.8"
+  }
+  if (!(Test-DotNet8Sdk)) {
+    throw ".NET SDK 8+ is still unavailable after setup. Close this window, run Start-RemotePC.cmd again, or install .NET SDK 8 manually."
+  }
+
+  $envValues = Read-EnvFile
+  $ffmpegPath = if ($envValues["FFMPEG_PATH"]) { $envValues["FFMPEG_PATH"] } else { "ffmpeg" }
+  if (!(Test-Executable $ffmpegPath)) {
+    if ($ffmpegPath -ne "ffmpeg") {
+      throw "The configured FFMPEG_PATH '$ffmpegPath' was not found. Fix it in Configure-RemotePC.cmd or set it to ffmpeg for automatic installation."
+    }
+    Install-WinGetPackage "FFmpeg" "Gyan.FFmpeg"
+  }
+  if (!(Test-Executable $ffmpegPath)) {
+    throw "FFmpeg is still unavailable after setup. Close this window, run Start-RemotePC.cmd again, or install FFmpeg manually."
+  }
+
+  $cloudflareEnabled = !$envValues["CLOUDFLARE_ENABLED"] -or $envValues["CLOUDFLARE_ENABLED"] -ne "false"
+  if ($cloudflareEnabled) {
+    $cloudflaredPath = if ($envValues["CLOUDFLARED_PATH"]) { $envValues["CLOUDFLARED_PATH"] } else { "cloudflared" }
+    if (!(Test-Executable $cloudflaredPath)) {
+      if ($cloudflaredPath -ne "cloudflared") {
+        throw "The configured CLOUDFLARED_PATH '$cloudflaredPath' was not found. Fix it in Configure-RemotePC.cmd or set it to cloudflared for automatic installation."
+      }
+      Install-WinGetPackage "cloudflared" "Cloudflare.cloudflared"
+    }
+    if (!(Test-Executable $cloudflaredPath)) {
+      throw "cloudflared is still unavailable after setup. Close this window, run Start-RemotePC.cmd again, or install cloudflared manually."
+    }
+  }
+
+  Write-Host "System requirements are ready."
+}
+
+function Ensure-Built {
   if (!(Test-Path (Join-Path $Root "node_modules"))) {
     Write-Step "Installing Node dependencies"
     npm install
@@ -154,17 +271,13 @@ function Ensure-Built {
     npm run build
   }
 
-  if (Get-Command "dotnet" -ErrorAction SilentlyContinue) {
-    $inputBuild = Join-Path $Root "native\RemotePc.InputHost\bin\Release\net8.0-windows\RemotePc.InputHost.dll"
-    $inputSource = Get-ChildItem (Join-Path $Root "native\RemotePc.InputHost") -File |
-      Sort-Object LastWriteTimeUtc -Descending |
-      Select-Object -First 1
-    if (!(Test-Path $inputBuild) -or $inputSource.LastWriteTimeUtc -gt (Get-Item $inputBuild).LastWriteTimeUtc) {
-      Write-Step "Building Windows input helper"
-      npm run build:input
-    }
-  } else {
-    Write-Host "dotnet was not found. The host can start, but real keyboard/mouse input needs the .NET input helper." -ForegroundColor Yellow
+  $inputBuild = Join-Path $Root "native\RemotePc.InputHost\bin\Release\net8.0-windows\RemotePc.InputHost.dll"
+  $inputSource = Get-ChildItem (Join-Path $Root "native\RemotePc.InputHost") -File |
+    Sort-Object LastWriteTimeUtc -Descending |
+    Select-Object -First 1
+  if (!(Test-Path $inputBuild) -or $inputSource.LastWriteTimeUtc -gt (Get-Item $inputBuild).LastWriteTimeUtc) {
+    Write-Step "Building Windows input helper"
+    npm run build:input
   }
 }
 
@@ -305,6 +418,7 @@ function Show-Status($Port, $AdminPort) {
 
 try {
   Ensure-Env
+  Ensure-SystemRequirements
   Ensure-Built
   $port = Get-Port
   $adminPort = Get-AdminPort

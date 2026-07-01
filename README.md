@@ -67,11 +67,12 @@ Runtime directories such as `data/`, `logs/`, `dist/`, `release/`, and
 ## Requirements
 
 - Windows 10 or 11
-- Node.js 24+
-- npm
-- .NET SDK 8+ for native input
-- FFmpeg on `PATH`
-- `cloudflared` on `PATH` when remote access is enabled
+- WinGet, included with the Windows App Installer
+
+`Start-RemotePC.cmd` checks for Node.js 24+, npm, .NET SDK 8+, FFmpeg, and
+`cloudflared`. On the first run it uses WinGet to install anything missing.
+Cloudflared is skipped when remote access is disabled. Windows may request
+administrator approval during installation.
 
 ## Quick Start
 
@@ -80,8 +81,10 @@ Runtime directories such as `data/`, `logs/`, `dist/`, `release/`, and
 3. Choose an 8 to 12 digit control PIN and whether new devices require local approval.
 4. Configure Cloudflare, streaming, and optional Discord notifications.
 5. Double-click `Start-RemotePC.cmd`.
-6. Open the printed remote link and enter the PIN.
-7. If approval is enabled, approve the device from the local admin panel.
+6. Allow any first-run software installations. Project dependencies and builds
+   are handled automatically.
+7. Open the printed remote link and enter the PIN.
+8. If approval is enabled, approve the device from the local admin panel.
 
 Stop the background host with `Stop-RemotePC.cmd`.
 
@@ -276,6 +279,9 @@ Do not distribute unsigned executable builds as official releases. See
 
 ## Troubleshooting
 
+- Missing requirement installation fails: update App Installer from Microsoft
+  Store, then run `Start-RemotePC.cmd` again. You can also install the package
+  named in the error manually.
 - Host rejects the PIN: rerun `Configure-RemotePC.cmd`; older PINs under eight
   digits are intentionally rejected.
 - Waiting for approval: open the local panel through `Start-RemotePC.cmd` and

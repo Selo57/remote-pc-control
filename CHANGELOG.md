@@ -15,3 +15,4 @@
 - Switched public defaults away from a hardcoded control PIN.
 - Added project security, contribution, and release documentation.
 - Added `gdigrab` capture as the stable default with optional `ddagrab`.
+- Added first-run WinGet installation for missing system requirements.
